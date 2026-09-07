@@ -1,0 +1,213 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Condominio {
+  id             String          @id @default(cuid())
+  nombre         String
+  rif            String          @unique
+  direccion      String?
+  administrador  String?
+  email          String?
+  telefono       String?
+  modoCobro      String          @default("ALICUOTAS") // ALICUOTAS | PARTES_IGUALES
+  numTorres      Int             @default(1)
+  tieneLocalesPB Boolean         @default(false)
+  tieneMezzanina Boolean         @default(false)
+  propiedades    Propiedad[]
+  infraestructura Infraestructura[]
+  gastos         Gasto[]
+  cuentas        CuentaBancaria[]
+  fondoReserva   FondoReserva?
+  logs           LogSistema[]
+  usuarios       Usuario[]
+}
+
+model LicenciaSoftware {
+  id        String   @id @default(uuid())
+  llave     String   @unique
+  activa    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Usuario {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String
+  rol          String   @default("CONDOMINIO")
+  condominioId String?
+  condominio   Condominio? @relation(fields: [condominioId], references: [id])
+  telefono     String?
+  pregunta1    String?
+  respuesta1   String?
+  pregunta2    String?
+  respuesta2   String?
+  pregunta3    String?
+  respuesta3   String?
+  activo       Boolean  @default(true)
+  creadoEn     DateTime @default(now())
+}
+
+model Familia {
+  id             String      @id @default(cuid())
+  nombre         String
+  propiedadId    String
+  propiedad      Propiedad   @relation(fields: [propiedadId], references: [id])
+  miembros       Residente[]
+  mascotas       String?     @default("Ninguna")
+  condicion      String?     @default("PROPIO")
+  menores        Int?        @default(0)
+  adultos        Int?        @default(0)
+  adultosMayores Int?        @default(0)
+  discapacitados Int?        @default(0)
+}
+
+model Propiedad {
+  id           String      @id @default(cuid())
+  condominioId String
+  condominio   Condominio  @relation(fields: [condominioId], references: [id])
+  numero       String      // Ej: Apto 11, Local 1
+  alicuota     Float       // Ej: 0.05 (5%)
+  m2           Float       @default(0.0)
+  tipo         String      @default("APARTAMENTO") // APARTAMENTO | LOCAL | MEZZANINA | OFICINA
+  torre        String?     @default("Torre A")
+  piso         String?     @default("1")
+  precioM2     Float       @default(0.0) // Valor/Tarifa por m²
+  cuotaFija    Float       @default(0.0) // Cuota fija mensual
+  residentes   Residente[]
+  avisos       AvisoCobro[]
+  familias     Familia[]
+  inspecciones Inspeccion[]
+}
+
+model Residente {
+  id            String    @id @default(cuid())
+  propiedadId   String
+  propiedad     Propiedad @relation(fields: [propiedadId], references: [id])
+  familiaId     String?
+  familia       Familia?  @relation(fields: [familiaId], references: [id])
+  nombre        String
+  email         String
+  telefono      String?
+  esPropietario Boolean   @default(true)
+}
+
+model AvisoCobro {
+  id          String    @id @default(cuid())
+  propiedadId String
+  propiedad   Propiedad @relation(fields: [propiedadId], references: [id])
+  mes         Int
+  anio        Int
+  montoUSD    Float
+  montoVES    Float
+  tasaBCV     Float
+  pagado      Boolean   @default(false)
+  pagos       Pago[]
+}
+
+model Infraestructura {
+  id                       String                  @id @default(cuid())
+  condominioId             String
+  condominio               Condominio              @relation(fields: [condominioId], references: [id])
+  tipo                     String                  // ASCENSOR, BOMBA_AGUA, TANQUE_AGUA, CCTV, ELECTRICIDAD, AREA_COMUN
+  nombre                   String                  // Ej: Ascensor Torre A, Bomba 1
+  estado                   String                  // OPERATIVO, MANTENIMIENTO, DANADO
+  detalles                 String?                 // Modelo, capacidad, marca, ubicación
+  fechaUltimoMantenimiento DateTime?
+  proximoMantenimiento     DateTime?
+  mantenimientos           RegistroMantenimiento[]
+  inspecciones             Inspeccion[]
+}
+
+model Inspeccion {
+  id                String           @id @default(cuid())
+  fecha             DateTime         @default(now())
+  inspector         String           // Nombre del administrador o técnico
+  observaciones     String
+  nivelGravedad     String           // NORMAL, ALERTA, CRITICO
+  
+  infraestructuraId String?
+  infraestructura   Infraestructura? @relation(fields: [infraestructuraId], references: [id])
+  
+  propiedadId       String?
+  propiedad         Propiedad?       @relation(fields: [propiedadId], references: [id])
+}
+
+model RegistroMantenimiento {
+  id                String          @id @default(cuid())
+  infraestructuraId String
+  infraestructura   Infraestructura @relation(fields: [infraestructuraId], references: [id])
+  fecha             DateTime        @default(now())
+  descripcion       String
+  costoUSD          Float?
+  tecnico           String?         // Empresa o persona que lo realizó
+}
+
+// NUEVOS MODELOS PARA GASTOS Y CONTABILIDAD
+
+model Gasto {
+  id           String      @id @default(cuid())
+  condominioId String
+  condominio   Condominio  @relation(fields: [condominioId], references: [id])
+  fecha        DateTime    @default(now())
+  concepto     String
+  categoria    String      // NOMINA, SERVICIOS, MANTENIMIENTO, MATERIALES, OTROS
+  monto        Float
+  moneda       String      // USD, VES
+  facturaRef   String?     // Opcional número de factura
+  mesCierre    Int?        // Mes en el que fue calculado
+  anioCierre   Int?        // Año en el que fue calculado
+
+  @@unique([condominioId, facturaRef]) // PREVENCIÓN FORENSE: Evita doble facturación
+}
+
+model CuentaBancaria {
+  id           String      @id @default(cuid())
+  condominioId String
+  condominio   Condominio  @relation(fields: [condominioId], references: [id])
+  nombre       String      // Ej: Banco Provincial Cta Corriente
+  tipo         String      // NACIONAL, INTERNACIONAL, EFECTIVO
+  saldoUSD     Float       @default(0)
+  saldoVES     Float       @default(0)
+}
+
+model FondoReserva {
+  id           String      @id @default(cuid())
+  condominioId String      @unique
+  condominio   Condominio  @relation(fields: [condominioId], references: [id])
+  saldoUSD     Float       @default(0)
+  porcentaje   Float       @default(10) // 10%
+}
+
+model Pago {
+  id           String      @id @default(cuid())
+  avisoId      String
+  aviso        AvisoCobro  @relation(fields: [avisoId], references: [id])
+  fecha        DateTime    @default(now())
+  montoPagado  Float
+  moneda       String
+  referencia   String?
+}
+
+model LogSistema {
+  id              String      @id @default(cuid())
+  condominioId    String
+  condominio      Condominio  @relation(fields: [condominioId], references: [id])
+  fecha           DateTime    @default(now())
+  tipo            String      // PAGO, ALERTA, SISTEMA, SEGURIDAD
+  mensaje         String
+  
+  // Auditoría WORM Criptográfica
+  usuarioId       String?     // Actor de la operación
+  accion          String?     // CREATE, UPDATE, DELETE, LOGIN
+  entidadAfectada String?     // Tabla afectada (ej. Pago, Gasto)
+  datosAnteriores String?     // JSON string
+  datosNuevos     String?     // JSON string
+  hashIntegridad  String?     // Firma SHA-256 para prevenir manipulación
+}

@@ -1,0 +1,15 @@
+services:
+  conven:
+    build: .
+    container_name: conven
+    restart: always
+    ports:
+      - "3002:3001"
+    volumes:
+      - conven_data:/app/prisma
+    environment:
+      - DATABASE_URL=file:/app/prisma/conven.db
+      - JWT_SECRET=conven-secret-docker-2025
+
+volumes:
+  conven_data:
