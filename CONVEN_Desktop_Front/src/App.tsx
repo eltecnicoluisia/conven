@@ -46,9 +46,80 @@ export const apiFetch = async (url: string, options: any = {}) => {
     return new Response(JSON.stringify({ error: 'Licencia requerida' }), { status: 402 });
   }
 
+  // Interceptar en GitHub Pages para entrega inmediata 24/7 sin backend
+  const isGh = typeof window !== 'undefined' && window.location.hostname.includes('github.io');
+  if (isGh) {
+    let mockData: any = {};
+    if (url.includes('/api/licencia')) {
+      mockData = { activado: true, status: 'ACTIVO', tipo: 'EMPRESARIAL' };
+    } else if (url.includes('/api/dashboard')) {
+      mockData = {
+        fondoReserva: { saldoUSD: 14850.00, porcentaje: 10 },
+        deudaActiva: { montoUSD: 1280.00, residentesEnMora: 4 },
+        gastoMensual: { montoUSD: 3450.00 },
+        saldoBancos: { totalVES: 125925.00, totalUSD: 3450.00 },
+        totalApartamentos: 64,
+        solventes: 60,
+        morosos: 4,
+        tasaBcv: 36.50,
+        logs: [
+          { id: 1, tipo: 'INFO', mensaje: 'Emisión de recibos de condominio Período Septiembre 2026', fecha: '2026-09-05T10:30:00Z' },
+          { id: 2, tipo: 'INFO', mensaje: 'Pago confirmado Apartamento 1-A (Carlos Mendoza) $85.00', fecha: '2026-09-06T14:15:00Z' },
+          { id: 3, tipo: 'ALERTA', mensaje: 'Notificación de mora automática enviada al Apto 2-B', fecha: '2026-09-07T08:00:00Z' },
+          { id: 4, tipo: 'INFO', mensaje: 'Mantenimiento preventivo de bombas concluido satisfactoriamente', fecha: '2026-09-07T11:45:00Z' }
+        ]
+      };
+    } else if (url.includes('/api/tesoreria') && url.includes('fondo')) {
+      mockData = { saldoUSD: 14850.00, porcentaje: 10 };
+    } else if (url.includes('/api/tesoreria')) {
+      mockData = [
+        { id: 1, nombre: 'Banesco Banco Universal', tipo: 'NACIONAL', saldoUSD: 2100.00, saldoVES: 76650.00 },
+        { id: 2, nombre: 'Mercantil Banco', tipo: 'NACIONAL', saldoUSD: 1350.00, saldoVES: 49275.00 }
+      ];
+    } else if (url.includes('/api/gastos')) {
+      mockData = [
+        { id: 1, descripcion: 'Mantenimiento de Ascensores Otis (2 Equipos)', montoUSD: 450.00, montoVES: 16425.00, categoria: 'Mantenimiento', fecha: '2026-09-01', estado: 'PAGADO' },
+        { id: 2, descripcion: 'Servicio de Vigilancia y Seguridad 24/7', montoUSD: 1200.00, montoVES: 43800.00, categoria: 'Seguridad', fecha: '2026-09-02', estado: 'PAGADO' },
+        { id: 3, descripcion: 'Mantenimiento de Bombas de Agua y Tanque', montoUSD: 380.00, montoVES: 13870.00, categoria: 'Mantenimiento', fecha: '2026-09-03', estado: 'PAGADO' },
+        { id: 4, descripcion: 'Consumo Eléctrico Áreas Comunes (Corpoelec)', montoUSD: 290.00, montoVES: 10585.00, categoria: 'Servicios', fecha: '2026-09-04', estado: 'PENDIENTE' },
+        { id: 5, descripcion: 'Hidrocapital - Facturación de Agua Edificio', montoUSD: 160.00, montoVES: 5840.00, categoria: 'Servicios', fecha: '2026-09-05', estado: 'PAGADO' }
+      ];
+    } else if (url.includes('/api/residentes')) {
+      mockData = [
+        { id: 1, apartamento: '1-A', propietario: 'Carlos Mendoza', alicuota: 1.56, saldoUSD: 0.00, estado: 'SOLVENTE', telefono: '0414-2345678', email: 'cmendoza@gmail.com' },
+        { id: 2, apartamento: '1-B', propietario: 'Elena Rivas', alicuota: 1.56, saldoUSD: 85.00, estado: 'PENDIENTE', telefono: '0424-3456789', email: 'erivas@gmail.com' },
+        { id: 3, apartamento: '2-A', propietario: 'Roberto Gómez', alicuota: 1.56, saldoUSD: 0.00, estado: 'SOLVENTE', telefono: '0412-4567890', email: 'rgomez@gmail.com' },
+        { id: 4, apartamento: '2-B', propietario: 'María Fernández', alicuota: 1.56, saldoUSD: 170.00, estado: 'MOROSO', telefono: '0416-5678901', email: 'mfernandez@gmail.com' },
+        { id: 5, apartamento: '3-A', propietario: 'Javier Castillo', alicuota: 1.56, saldoUSD: 0.00, estado: 'SOLVENTE', telefono: '0414-6789012', email: 'jcastillo@gmail.com' },
+        { id: 6, apartamento: 'PH-1', propietario: 'Inés Benítez', alicuota: 3.12, saldoUSD: 0.00, estado: 'SOLVENTE', telefono: '0424-7890123', email: 'ibenitez@gmail.com' }
+      ];
+    } else if (url.includes('/api/config')) {
+      mockData = {
+        id: 'res-avila',
+        nombre: 'Residencias Parque El Ávila',
+        rif: 'J-40982314-5',
+        direccion: 'Av. Principal Los Palos Grandes, Caracas',
+        tasaBcv: 36.50,
+        totalAlicuotas: 100,
+        fondoReservaPorcentaje: 10
+      };
+    } else if (url.includes('/api/usuarios')) {
+      mockData = [
+        { id: 1, username: 'admin', nombre: 'Luis Uzcategui', rol: 'SUPERADMIN', email: 'tecnicouzcategui@gmail.com' }
+      ];
+    } else if (url.includes('/api/facturacion')) {
+      mockData = { success: true, generado: true, totalRecibos: 64 };
+    } else {
+      mockData = { success: true, message: 'Operación realizada en modo demo' };
+    }
+    return new Response(JSON.stringify(mockData), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
   try {
     const res = await fetch(url, { ...options, headers });
-    
     if (res.status === 402) {
       if (!licenseBlocked && globalSetLicenseBlocked) {
         licenseBlocked = true;
@@ -56,74 +127,14 @@ export const apiFetch = async (url: string, options: any = {}) => {
       }
       return res;
     }
-    
     if (res.status === 401 && !url.includes('/api/auth')) {
       clearSession();
       window.location.reload();
     }
-    
     if (res.ok) return res;
-  } catch (err) {
-    // Red no disponible o entorno estático GitHub Pages: activar fallback
-  }
+  } catch (err) {}
 
-  // Mock de datos realistas para demostración en vivo 24/7 en GitHub Pages
-  let mockData: any = {};
-  if (url.includes('/api/licencia')) {
-    mockData = { activado: true, status: 'ACTIVO', tipo: 'EMPRESARIAL' };
-  } else if (url.includes('/api/dashboard')) {
-    mockData = {
-      totalApartamentos: 64,
-      solventes: 56,
-      morosos: 8,
-      recaudadoMesUSD: 5420.00,
-      recaudadoMesVES: 197830.00,
-      porcentajeCobranza: 87.5,
-      fondoReservaUSD: 14850.00,
-      gastosMesUSD: 3620.00,
-      tasaBcv: 36.50
-    };
-  } else if (url.includes('/api/gastos')) {
-    mockData = [
-      { id: 1, descripcion: 'Mantenimiento de Ascensores Otis (2 Equipos)', montoUSD: 450.00, montoVES: 16425.00, categoria: 'Mantenimiento', fecha: '2026-09-01', estado: 'PAGADO' },
-      { id: 2, descripcion: 'Servicio de Vigilancia y Seguridad 24/7', montoUSD: 1200.00, montoVES: 43800.00, categoria: 'Seguridad', fecha: '2026-09-02', estado: 'PAGADO' },
-      { id: 3, descripcion: 'Mantenimiento de Bombas de Agua y Tanque', montoUSD: 380.00, montoVES: 13870.00, categoria: 'Mantenimiento', fecha: '2026-09-03', estado: 'PAGADO' },
-      { id: 4, descripcion: 'Consumo Eléctrico Áreas Comunes (Corpoelec)', montoUSD: 290.00, montoVES: 10585.00, categoria: 'Servicios', fecha: '2026-09-04', estado: 'PENDIENTE' },
-      { id: 5, descripcion: 'Hidrocapital - Facturación de Agua Edificio', montoUSD: 160.00, montoVES: 5840.00, categoria: 'Servicios', fecha: '2026-09-05', estado: 'PAGADO' }
-    ];
-  } else if (url.includes('/api/residentes')) {
-    mockData = [
-      { id: 1, apartamento: '1-A', propietario: 'Carlos Mendoza', alicuota: 1.56, saldoUSD: 0.00, estado: 'SOLVENTE', telefono: '0414-2345678', email: 'cmendoza@gmail.com' },
-      { id: 2, apartamento: '1-B', propietario: 'Elena Rivas', alicuota: 1.56, saldoUSD: 85.00, estado: 'PENDIENTE', telefono: '0424-3456789', email: 'erivas@gmail.com' },
-      { id: 3, apartamento: '2-A', propietario: 'Roberto Gómez', alicuota: 1.56, saldoUSD: 0.00, estado: 'SOLVENTE', telefono: '0412-4567890', email: 'rgomez@gmail.com' },
-      { id: 4, apartamento: '2-B', propietario: 'María Fernández', alicuota: 1.56, saldoUSD: 170.00, estado: 'MOROSO', telefono: '0416-5678901', email: 'mfernandez@gmail.com' },
-      { id: 5, apartamento: '3-A', propietario: 'Javier Castillo', alicuota: 1.56, saldoUSD: 0.00, estado: 'SOLVENTE', telefono: '0414-6789012', email: 'jcastillo@gmail.com' },
-      { id: 6, apartamento: 'PH-1', propietario: 'Inés Benítez', alicuota: 3.12, saldoUSD: 0.00, estado: 'SOLVENTE', telefono: '0424-7890123', email: 'ibenitez@gmail.com' }
-    ];
-  } else if (url.includes('/api/config')) {
-    mockData = {
-      id: 'res-avila',
-      nombre: 'Residencias Parque El Ávila',
-      rif: 'J-40982314-5',
-      direccion: 'Av. Principal Los Palos Grandes, Caracas',
-      tasaBcv: 36.50,
-      totalAlicuotas: 100,
-      fondoReservaPorcentaje: 10
-    };
-  } else if (url.includes('/api/usuarios')) {
-    mockData = [
-      { id: 1, username: 'admin', nombre: 'Luis Uzcategui', rol: 'SUPERADMIN', email: 'tecnicouzcategui@gmail.com' }
-    ];
-  } else if (url.includes('/api/facturacion')) {
-    mockData = { success: true, generado: true, totalRecibos: 64 };
-  } else {
-    mockData = { success: true, message: 'Operación realizada en modo demo' };
-  }
-
-  return new Response(JSON.stringify(mockData), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' }
-  });
+  return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 };
 
 export const fmtVE = (n: number) => {
@@ -141,7 +152,7 @@ function App() {
 
   useEffect(() => {
     globalSetLicenseBlocked = setIsLicenseBlocked;
-    fetch('/api/licencia/status').then(r => r.json()).then(d => {
+    apiFetch('/api/licencia/status').then(r => r.json()).then(d => {
       if (d && d.activado === false) {
         licenseBlocked = true;
         setIsLicenseBlocked(true);
@@ -387,7 +398,7 @@ function DashboardPanel({ activeCondominio }: { activeCondominio: string }) {
             <Activity className="w-5 h-5 text-agent-cyan" /> Log del Sistema
           </h3>
           <div className="space-y-5">
-            {data.logs.map((log: any) => (
+            {(data.logs || []).map((log: any) => (
               <div key={log.id} className="flex gap-3">
                 <div className={`mt-1 w-2 h-2 rounded-full ${log.tipo === 'ALERTA' ? 'bg-agent-danger animate-pulse' : 'bg-agent-success'}`}></div>
                 <div>
@@ -396,7 +407,7 @@ function DashboardPanel({ activeCondominio }: { activeCondominio: string }) {
                 </div>
               </div>
             ))}
-            {data.logs.length === 0 && <p className="text-slate-400 font-sans font-semibold tracking-wide">Sin actividad reciente</p>}
+            {(!data.logs || data.logs.length === 0) && <p className="text-slate-400 font-sans font-semibold tracking-wide">Sin actividad reciente</p>}
           </div>
           <button className="w-full mt-6 py-2 border border-agent-border rounded-lg text-agent-text hover:text-white hover:border-agent-cyan transition-colors font-sans font-semibold tracking-wide text-sm">Ver Logs Completos</button>
         </div>
